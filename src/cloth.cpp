@@ -10,11 +10,12 @@
 using namespace std;
 
 Cloth::Cloth(double width, double height, int num_width_points,
-             int num_height_points, float thickness) {
+             int num_height_points, int num_length_points, float thickness) {
   this->width = width;
   this->height = height;
   this->num_width_points = num_width_points;
   this->num_height_points = num_height_points;
+  this->num_length_points = num_length_points;
   this->thickness = thickness;
 
   buildGrid();
@@ -35,52 +36,56 @@ void Cloth::buildGrid() {
 
     for (int col = 0; col < num_height_points; col++) {
         for (int row = 0; row < num_width_points; row++) {
+            for (int len = 0; len < num_length_points; len++) {
+                double x = width * row / (double(num_width_points) - 1.0);
+                double y = height * col / (double(num_height_points) - 1.0);
+                
+                // may need to add more stuff to take the 3D into consideration
+                vector<int> xy{ row, col };
 
-            double x = width * row / (double(num_width_points) - 1.0);
-            double y = height * col / (double(num_height_points) - 1.0);
-            vector<int> xy{ row, col };
+                Vector3D pos;
+                bool pin;
+                
+                if (orientation == HORIZONTAL) {
+                    pos = Vector3D(x, 1.0, y);
+                }
+                else {
+                    pos = Vector3D(x, y, (rand() % 2 - 1) / 1000.0);
+                }
 
-            Vector3D pos;
-            bool pin;
-            
-            if (orientation == HORIZONTAL) {
-                pos = Vector3D(x, 1.0, y);
+                if (std::find(pinned.begin(), pinned.end(), xy) != pinned.end()) {
+                    pin = true;
+                }
+                else {
+                    pin = false;
+                }
+
+                point_masses.emplace_back(PointMass(pos, pin));
             }
-            else {
-                pos = Vector3D(x, y, (rand() % 2 - 1) / 1000.0);
-            }
-
-            if (std::find(pinned.begin(), pinned.end(), xy) != pinned.end()) {
-                pin = true;
-            }
-            else {
-                pin = false;
-            }
-
-            point_masses.emplace_back(PointMass(pos, pin));
-
         }
     }
 
     for (int row = 0; row < num_width_points; row++) {
         for (int col = 0; col < num_height_points; col++) {
-            if (row - 1 >= 0) {
-                springs.emplace_back(Spring(&point_masses[col * num_width_points + row], &point_masses[col * num_width_points + row - 1], STRUCTURAL));
-            }
-            if (col - 1 >= 0) {
-                springs.emplace_back(Spring(&point_masses[col * num_width_points + row], &point_masses[(col - 1) * num_width_points + row], STRUCTURAL));
-            }
-            if (row - 1 >= 0 && col - 1 >= 0) {
-                springs.emplace_back(Spring(&point_masses[col * num_width_points + row], &point_masses[(col - 1) * num_width_points + row - 1], SHEARING));
-            }
-            if (row + 1 < num_width_points && col - 1 >= 0) {
-                springs.emplace_back(Spring(&point_masses[col * num_width_points + row], &point_masses[(col - 1) * num_width_points + row + 1], SHEARING));
-            }
-            if (row - 2 >= 0) {
-                springs.emplace_back(Spring(&point_masses[col * num_width_points + row], &point_masses[col * num_width_points + row - 2], BENDING));
-            }
-            if (col - 2 >= 0) {
-                springs.emplace_back(Spring(&point_masses[col * num_width_points + row], &point_masses[(col - 2) * num_width_points + row], BENDING));
+            for (int len = 0; len < num_length_points; len++) {
+                if (row - 1 >= 0) {
+                    springs.emplace_back(Spring(&point_masses[col * num_width_points + row], &point_masses[col * num_width_points + row - 1], STRUCTURAL));
+                }
+                if (col - 1 >= 0) {
+                    springs.emplace_back(Spring(&point_masses[col * num_width_points + row], &point_masses[(col - 1) * num_width_points + row], STRUCTURAL));
+                }
+                if (row - 1 >= 0 && col - 1 >= 0) {
+                    springs.emplace_back(Spring(&point_masses[col * num_width_points + row], &point_masses[(col - 1) * num_width_points + row - 1], SHEARING));
+                }
+                if (row + 1 < num_width_points && col - 1 >= 0) {
+                    springs.emplace_back(Spring(&point_masses[col * num_width_points + row], &point_masses[(col - 1) * num_width_points + row + 1], SHEARING));
+                }
+                if (row - 2 >= 0) {
+                    springs.emplace_back(Spring(&point_masses[col * num_width_points + row], &point_masses[col * num_width_points + row - 2], BENDING));
+                }
+                if (col - 2 >= 0) {
+                    springs.emplace_back(Spring(&point_masses[col * num_width_points + row], &point_masses[(col - 2) * num_width_points + row], BENDING));
+                }
             }
         }
     }
