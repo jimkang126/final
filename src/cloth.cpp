@@ -57,7 +57,7 @@ void Cloth::buildGrid() {
             pair<double, double> coords = { x, y };
             //h += depth;
 
-            pos = Vector3D(x, h, y);
+            pos = Vector3D(x, h + depth, y);
 
 
             pos_array.insert({ coords, h });
@@ -141,7 +141,6 @@ void Cloth::simulate(double frames_per_sec, double simulation_steps, ClothParame
   
 
   // TODO (Part 2): Use Verlet integration to compute new point mass positions
-
 
     for (int col = 0; col < num_height_points; col++) {
         for (int row = 0; row < num_width_points; row++) {
