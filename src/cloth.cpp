@@ -37,7 +37,7 @@ void Cloth::buildGrid() {
   // TODO (Part 1): Build a grid of masses and springs.
     //finding depth
     depth = 1.0;
-    
+    double step_size = width / (double(num_width_points) - 1.0);
     //staring build
     for (int col = 0; col < num_height_points; col++) {
         for (int row = 0; row < num_width_points; row++) {
@@ -50,10 +50,12 @@ void Cloth::buildGrid() {
 
             Vector3D pos;
             bool pin;
-            
-            double h = width * width - x * x - y * y;
+            double inv = (1 / step_size);
+            //double h = width * width - x * x - y * y;
+            double h = sin(inv*(x*x + y *y)) / inv;
+            //double h = sin(inv * x) * cos(inv * y) / (inv);
             pair<double, double> coords = { x, y };
-            h += depth;
+            //h += depth;
 
             pos = Vector3D(x, h, y);
 
@@ -148,7 +150,7 @@ void Cloth::simulate(double frames_per_sec, double simulation_steps, ClothParame
            
           
             pair<double, double> coords = { x, y };
-            vel_array[coords] += ((pos_array[{x + step_size, y}] + pos_array[{x - step_size , y}] + pos_array[{x, y - step_size}] + pos_array[{x, y + step_size}]) / 4) - pos_array[coords] ;
+            vel_array[coords] += (((pos_array[{x + step_size, y}] + pos_array[{x - step_size , y}] + pos_array[{x, y - step_size}] + pos_array[{x, y + step_size}]) / 4) - pos_array[coords]);
             
           }
       }
@@ -157,7 +159,7 @@ void Cloth::simulate(double frames_per_sec, double simulation_steps, ClothParame
             double x = width * row / (double(num_width_points) - 1.0);
             double y = height * col / (double(num_height_points) - 1.0);
             pair<double, double> coords = { x, y };
-            vel_array[coords] *= .99;
+            vel_array[coords] *= .999;
         }
     }
     for (int col = 0; col < num_height_points; col++) {
