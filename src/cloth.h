@@ -68,6 +68,7 @@ struct Cloth {
   double thickness;
   e_orientation orientation;
 
+
   // Cloth components
   vector<PointMass> point_masses;
   vector<vector<int>> pinned;

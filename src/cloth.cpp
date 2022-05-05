@@ -31,8 +31,8 @@ Cloth::~Cloth() {
 }
 
 void Cloth::buildGrid() {
-  // TODO (Part 1): Build a grid of masses and springs.
-
+    // TODO (Part 1): Build a grid of masses and springs.
+    
     for (int col = 0; col < num_height_points; col++) {
         for (int row = 0; row < num_width_points; row++) {
 
@@ -42,7 +42,7 @@ void Cloth::buildGrid() {
 
             Vector3D pos;
             bool pin;
-            
+
             if (orientation == HORIZONTAL) {
                 pos = Vector3D(x, 1.0, y);
             }
@@ -62,29 +62,14 @@ void Cloth::buildGrid() {
         }
     }
 
-    for (int row = 0; row < num_width_points; row++) {
-        for (int col = 0; col < num_height_points; col++) {
-            if (row - 1 >= 0) {
-                springs.emplace_back(Spring(&point_masses[col * num_width_points + row], &point_masses[col * num_width_points + row - 1], STRUCTURAL));
-            }
-            if (col - 1 >= 0) {
-                springs.emplace_back(Spring(&point_masses[col * num_width_points + row], &point_masses[(col - 1) * num_width_points + row], STRUCTURAL));
-            }
-            if (row - 1 >= 0 && col - 1 >= 0) {
-                springs.emplace_back(Spring(&point_masses[col * num_width_points + row], &point_masses[(col - 1) * num_width_points + row - 1], SHEARING));
-            }
-            if (row + 1 < num_width_points && col - 1 >= 0) {
-                springs.emplace_back(Spring(&point_masses[col * num_width_points + row], &point_masses[(col - 1) * num_width_points + row + 1], SHEARING));
-            }
-            if (row - 2 >= 0) {
-                springs.emplace_back(Spring(&point_masses[col * num_width_points + row], &point_masses[col * num_width_points + row - 2], BENDING));
-            }
-            if (col - 2 >= 0) {
-                springs.emplace_back(Spring(&point_masses[col * num_width_points + row], &point_masses[(col - 2) * num_width_points + row], BENDING));
+    for (PointMass& pm : this->point_masses) {
+        for (PointMass& pm2 : this->point_masses) {
+            bool not_same_point = pm.position.x != pm2.position.x || pm.position.y != pm2.position.y || pm.position.y != pm2.position.y;
+            if (not_same_point && (pm.position - pm2.position).norm() < 1) {
+                springs.emplace_back(Spring(&pm, &pm2, STRUCTURAL));
             }
         }
     }
-
 }
 
 void Cloth::simulate(double frames_per_sec, double simulation_steps, ClothParameters *cp,
@@ -104,29 +89,12 @@ void Cloth::simulate(double frames_per_sec, double simulation_steps, ClothParame
   }
 
   for (Spring sp : springs) {
-      switch (sp.spring_type) {
-      case STRUCTURAL:
           if (cp->enable_structural_constraints) {
-              double Fs = cp->ks * ((sp.pm_a->position - sp.pm_b->position).norm() - sp.rest_length);
+              double Fs = (cp->ks * 1 / pow((sp.pm_a->position - sp.pm_b->position).norm(), 4)) - (cp->ks * 1 / pow((sp.pm_a->position - sp.pm_b->position).norm(), 2));
               sp.pm_a->forces += Fs * (sp.pm_b->position - sp.pm_a->position).unit();
               sp.pm_b->forces += Fs * (sp.pm_a->position - sp.pm_b->position).unit();
           }
-          break;
-      case SHEARING:
-          if (cp->enable_shearing_constraints) {
-              double Fs = cp->ks * ((sp.pm_a->position - sp.pm_b->position).norm() - sp.rest_length);
-              sp.pm_a->forces += Fs * (sp.pm_b->position - sp.pm_a->position).unit();
-              sp.pm_b->forces += Fs * (sp.pm_a->position - sp.pm_b->position).unit();
-          }
-          break;
-      case BENDING:
-          if (cp->enable_bending_constraints) {
-              double Fs = cp->ks * 0.2 * ((sp.pm_a->position - sp.pm_b->position).norm() - sp.rest_length);
-              sp.pm_a->forces += Fs * (sp.pm_b->position - sp.pm_a->position).unit();
-              sp.pm_b->forces += Fs * (sp.pm_a->position - sp.pm_b->position).unit();
-          }
-          break;
-      }
+
   }
 
   // TODO (Part 2): Use Verlet integration to compute new point mass positions
