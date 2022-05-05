@@ -36,59 +36,55 @@ void Cloth::buildGrid() {
 
     for (int col = 0; col < num_height_points; col++) {
         for (int row = 0; row < num_width_points; row++) {
-            for (int len = 0; len < num_length_points; len++) {
-                double x = width * row / (double(num_width_points) - 1.0);
-                double y = height * col / (double(num_height_points) - 1.0);
+            
+            double x = width * row / (double(num_width_points) - 1.0);
+            double y = height * col / (double(num_height_points) - 1.0);
+
+            // may need to add more stuff to take the 3D into consideration
+            vector<int> xy{ row, col };
+
+            Vector3D pos;
+            bool pin;
+            double h = sin(x * num_width_points) + cos(y * num_height_points);
+            pair<double, double> coords = { x, y };
+
+            pos = Vector3D(x, h, y);
+
                 
-                // may need to add more stuff to take the 3D into consideration
-                vector<int> xy{ row, col };
-
-                Vector3D pos;
-                bool pin;
+            pos_array.insert({ coords, h });
+            vel_array.insert({ coords, 0 });
                 
-                if (orientation == HORIZONTAL) {
-                    pos = Vector3D(x, 1.0, y);
-                }
-                else {
-                    pos = Vector3D(x, y, (rand() % 2 - 1) / 1000.0);
-                }
+            point_masses.emplace_back(PointMass(pos, false));
 
-                if (std::find(pinned.begin(), pinned.end(), xy) != pinned.end()) {
-                    pin = true;
-                }
-                else {
-                    pin = false;
-                }
 
-                point_masses.emplace_back(PointMass(pos, pin));
-            }
+
         }
     }
 
     for (int row = 0; row < num_width_points; row++) {
         for (int col = 0; col < num_height_points; col++) {
-            for (int len = 0; len < num_length_points; len++) {
-                if (row - 1 >= 0) {
-                    springs.emplace_back(Spring(&point_masses[col * num_width_points + row], &point_masses[col * num_width_points + row - 1], STRUCTURAL));
-                }
-                if (col - 1 >= 0) {
-                    springs.emplace_back(Spring(&point_masses[col * num_width_points + row], &point_masses[(col - 1) * num_width_points + row], STRUCTURAL));
-                }
-                if (row - 1 >= 0 && col - 1 >= 0) {
-                    springs.emplace_back(Spring(&point_masses[col * num_width_points + row], &point_masses[(col - 1) * num_width_points + row - 1], SHEARING));
-                }
-                if (row + 1 < num_width_points && col - 1 >= 0) {
-                    springs.emplace_back(Spring(&point_masses[col * num_width_points + row], &point_masses[(col - 1) * num_width_points + row + 1], SHEARING));
-                }
-                if (row - 2 >= 0) {
-                    springs.emplace_back(Spring(&point_masses[col * num_width_points + row], &point_masses[col * num_width_points + row - 2], BENDING));
-                }
-                if (col - 2 >= 0) {
-                    springs.emplace_back(Spring(&point_masses[col * num_width_points + row], &point_masses[(col - 2) * num_width_points + row], BENDING));
-                }
+            if (row - 1 >= 0) {
+                springs.emplace_back(Spring(&point_masses[col * num_width_points + row], &point_masses[col * num_width_points + row - 1], STRUCTURAL));
+            }
+            if (col - 1 >= 0) {
+                springs.emplace_back(Spring(&point_masses[col * num_width_points + row], &point_masses[(col - 1) * num_width_points + row], STRUCTURAL));
+            }
+            if (row - 1 >= 0 && col - 1 >= 0) {
+                springs.emplace_back(Spring(&point_masses[col * num_width_points + row], &point_masses[(col - 1) * num_width_points + row - 1], SHEARING));
+            }
+            if (row + 1 < num_width_points && col - 1 >= 0) {
+                springs.emplace_back(Spring(&point_masses[col * num_width_points + row], &point_masses[(col - 1) * num_width_points + row + 1], SHEARING));
+            }
+            if (row - 2 >= 0) {
+                springs.emplace_back(Spring(&point_masses[col * num_width_points + row], &point_masses[col * num_width_points + row - 2], BENDING));
+            }
+            if (col - 2 >= 0) {
+                springs.emplace_back(Spring(&point_masses[col * num_width_points + row], &point_masses[(col - 2) * num_width_points + row], BENDING));
             }
         }
     }
+
+   
 
 }
 
@@ -98,8 +94,8 @@ void Cloth::simulate(double frames_per_sec, double simulation_steps, ClothParame
   double mass = width * height * cp->density / num_width_points / num_height_points;
   double delta_t = 1.0f / frames_per_sec / simulation_steps;
 
-  // TODO (Part 2): Compute total force acting on each point mass.
 
+  // TODO (Part 2): Compute total force acting on each point mass.
   for (PointMass& pm : this->point_masses) {
       pm.forces = Vector3D(0.0, 0.0, 0.0);
 
@@ -107,7 +103,7 @@ void Cloth::simulate(double frames_per_sec, double simulation_steps, ClothParame
           pm.forces += ext * mass;
       }
   }
-
+  
   for (Spring sp : springs) {
       switch (sp.spring_type) {
       case STRUCTURAL:
@@ -133,52 +129,65 @@ void Cloth::simulate(double frames_per_sec, double simulation_steps, ClothParame
           break;
       }
   }
+  
 
   // TODO (Part 2): Use Verlet integration to compute new point mass positions
 
-  for (PointMass& pm : this->point_masses) {
-      if (!pm.pinned) {
-          Vector3D newpos = pm.position + (1 - cp->damping / 100.0) * (pm.position - pm.last_position) + pm.forces / mass * delta_t * delta_t;
 
-          pm.last_position = pm.position;
-          pm.position = newpos;
+    for (int col = 0; col < num_height_points; col++) {
+        for (int row = 0; row < num_width_points; row++) {
+            double x = width * row / (double(num_width_points) - 1.0);
+            double y = height * col / (double(num_height_points) - 1.0);
+           
+          
+            pair<double, double> coords = { x, y };
+            vel_array[coords] += ((pos_array[{x + 1, y}] + pos_array[{x - 1 , y}] + pos_array[{x, y - 1}] + pos_array[{x, y + 1}]) / 4) - pos_array[coords] ;
+            
+          }
       }
-  }
+    for (int col = 0; col < num_height_points; col++) {
+        for (int row = 0; row < num_width_points; row++) {
+            double x = width * row / (double(num_width_points) - 1.0);
+            double y = height * col / (double(num_height_points) - 1.0);
+            pair<double, double> coords = { x, y };
+            vel_array[coords] *= .99;
+        }
+    }
+    for (int col = 0; col < num_height_points; col++) {
+        for (int row = 0; row < num_width_points; row++) {
+            double x = width * row / (double(num_width_points) - 1.0);
+            double y = height * col / (double(num_height_points) - 1.0);
+            pair<double, double> coords = { x, y };
+            pos_array[coords] += vel_array[coords];
+            
+        }
+    }
+    for (int col = 0; col < num_height_points; col++) {
+        for (int row = 0; row < num_width_points; row++) {
+            double x = width * row / (double(num_width_points) - 1.0);
+            double y = height * col / (double(num_height_points) - 1.0);
+            pair<double, double> coords = { x, y };
+            for (PointMass& pm : point_masses) {
+                if (pm.position.x == x && pm.position.z == y) {
+                    pm.last_position.y = pm.position.y;
+                    pm.position.y = pos_array[coords];
+                    break;
+                }
+            }
+        }
+    }
+
+
 
 
   // TODO (Part 4): Handle self-collisions.
-  build_spatial_map();
-
-  for (PointMass& pm : this->point_masses) {
-      self_collide(pm, simulation_steps);
-  }
-
-  // TODO (Part 3): Handle collisions with other primitives.
-  for (PointMass& pm : this->point_masses) {
-      for (CollisionObject* obj : *collision_objects) {
-          obj->collide(pm);
-      }
-  }
+  
 
 
   // TODO (Part 2): Constrain the changes to be such that the spring does not change
   // in length more than 10% per timestep [Provot 1995].
 
-  for (Spring& sp : this->springs) {
-      if ((sp.pm_a->position - sp.pm_b->position).norm() > 1.1 * sp.rest_length) {
-          if (sp.pm_a->pinned && !sp.pm_b->pinned) {
-              sp.pm_b->position = sp.pm_a->position + (sp.pm_b->position - sp.pm_a->position).unit() * 1.1 * sp.rest_length;
-          }
-          else if (!sp.pm_a->pinned && sp.pm_b->pinned) {
-              sp.pm_a->position = sp.pm_b->position + (sp.pm_a->position - sp.pm_b->position).unit() * 1.1 * sp.rest_length;
-          }
-          else if (!sp.pm_a->pinned && !sp.pm_b->pinned) {
-              double correction = (sp.pm_a->position - sp.pm_b->position).norm() - 1.1 * sp.rest_length;
-              sp.pm_a->position = sp.pm_a->position + correction / 2.0 * (sp.pm_b->position - sp.pm_a->position).unit();
-              sp.pm_b->position = sp.pm_b->position + correction / 2.0 * (sp.pm_a->position - sp.pm_b->position).unit();
-          }
-      }
-  }
+  
 
 }
 

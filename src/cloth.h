@@ -67,6 +67,9 @@ struct Cloth {
   int num_height_points;
   int num_length_points;
   double thickness;
+  map<pair<double, double>, double> pos_array;
+  map<pair<double, double>, double> vel_array;
+
   e_orientation orientation;
 
   // Cloth components
