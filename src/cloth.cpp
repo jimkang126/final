@@ -50,7 +50,8 @@ void Cloth::buildGrid() {
 
             Vector3D pos;
             bool pin;
-            double h = x + y;
+            
+            double h = width * width - x * x - y * y;
             pair<double, double> coords = { x, y };
             h += depth;
 
