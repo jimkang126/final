@@ -43,12 +43,8 @@ void Cloth::buildGrid() {
             Vector3D pos;
             bool pin;
 
-            if (orientation == HORIZONTAL) {
-                pos = Vector3D(x, 1.0, y);
-            }
-            else {
-                pos = Vector3D(x, y, (rand() % 2 - 1) / 1000.0);
-            }
+            pos = Vector3D(x, y, (rand() % 2 - 1) / 1000.0);
+
 
             if (std::find(pinned.begin(), pinned.end(), xy) != pinned.end()) {
                 pin = true;
@@ -61,15 +57,25 @@ void Cloth::buildGrid() {
 
         }
     }
-
-    for (PointMass& pm : this->point_masses) {
-        for (PointMass& pm2 : this->point_masses) {
-            bool not_same_point = pm.position.x != pm2.position.x || pm.position.y != pm2.position.y || pm.position.y != pm2.position.y;
+    for (int row = 0; row < num_width_points; row++) {
+        for (int col = 0; col < num_height_points; col++) {
+            for (int row2 = 0; row2 < num_width_points; row2++) {
+                for (int col2 = 0; col2 < num_height_points; col2++) {
+                    if (row != row2 || col != col2 && row-1 >0) {
+                        springs.emplace_back(Spring(&point_masses[col * num_width_points + row], &point_masses[col2 * num_width_points + row2], STRUCTURAL));
+                    }
+                }
+            }
+        }
+    }
+    /*for (PointMass pm : this->point_masses) {
+        for (PointMass pm2 : this->point_masses) {
+            bool not_same_point = (pm.position - pm2.position).norm() <.000001;
             if (not_same_point && (pm.position - pm2.position).norm() < 1) {
                 springs.emplace_back(Spring(&pm, &pm2, STRUCTURAL));
             }
         }
-    }
+    }*/
 }
 
 void Cloth::simulate(double frames_per_sec, double simulation_steps, ClothParameters *cp,
