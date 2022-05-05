@@ -250,11 +250,20 @@ void ClothSimulator::drawContents() {
   }
 
   // Bind the active shader
+  int plane_shader_idx = 7;
+  for (size_t i = 0; i < shaders_combobox_names.size(); ++i) {
+      if (shaders_combobox_names[i] == "Texture") {
+          plane_shader_idx = i;
+          break;
+      }
+  }
 
   const UserShader& active_shader = shaders[active_shader_idx];
-
+  const UserShader& plane_shader = shaders[plane_shader_idx];
   GLShader &shader = *active_shader.nanogui_shader;
+  GLShader &plane_shade = *plane_shader.nanogui_shader;
   shader.bind();
+  
 
   // Prepare the camera projection matrix
 
@@ -302,10 +311,11 @@ void ClothSimulator::drawContents() {
     drawPhong(shader);
     break;
   }
-
+  //plane_shade.bind();
   for (CollisionObject *co : *collision_objects) {
     co->render(shader);
   }
+  
 }
 
 void ClothSimulator::drawWireframe(GLShader &shader) {
