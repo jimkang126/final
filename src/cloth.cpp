@@ -25,6 +25,8 @@ Cloth::Cloth(double width, double height, int num_width_points,
 Cloth::~Cloth() {
   point_masses.clear();
   springs.clear();
+  pos_array.clear();
+  vel_array.clear();
 
   if (clothMesh) {
     delete clothMesh;
@@ -33,10 +35,13 @@ Cloth::~Cloth() {
 
 void Cloth::buildGrid() {
   // TODO (Part 1): Build a grid of masses and springs.
-
+    //finding depth
+    depth = 1.0;
+    
+    //staring build
     for (int col = 0; col < num_height_points; col++) {
         for (int row = 0; row < num_width_points; row++) {
-            
+
             double x = width * row / (double(num_width_points) - 1.0);
             double y = height * col / (double(num_height_points) - 1.0);
 
@@ -45,15 +50,16 @@ void Cloth::buildGrid() {
 
             Vector3D pos;
             bool pin;
-            double h = sin(x * num_width_points) + cos(y * num_height_points);
+            double h = x + y;
             pair<double, double> coords = { x, y };
+            h += depth;
 
             pos = Vector3D(x, h, y);
 
-                
+
             pos_array.insert({ coords, h });
             vel_array.insert({ coords, 0 });
-                
+
             point_masses.emplace_back(PointMass(pos, false));
 
 
@@ -93,7 +99,7 @@ void Cloth::simulate(double frames_per_sec, double simulation_steps, ClothParame
                      vector<CollisionObject *> *collision_objects) {
   double mass = width * height * cp->density / num_width_points / num_height_points;
   double delta_t = 1.0f / frames_per_sec / simulation_steps;
-
+  double step_size = width / (double(num_width_points) - 1.0);
 
   // TODO (Part 2): Compute total force acting on each point mass.
   for (PointMass& pm : this->point_masses) {
@@ -141,7 +147,7 @@ void Cloth::simulate(double frames_per_sec, double simulation_steps, ClothParame
            
           
             pair<double, double> coords = { x, y };
-            vel_array[coords] += ((pos_array[{x + 1, y}] + pos_array[{x - 1 , y}] + pos_array[{x, y - 1}] + pos_array[{x, y + 1}]) / 4) - pos_array[coords] ;
+            vel_array[coords] += ((pos_array[{x + step_size, y}] + pos_array[{x - step_size , y}] + pos_array[{x, y - step_size}] + pos_array[{x, y + step_size}]) / 4) - pos_array[coords] ;
             
           }
       }
@@ -170,7 +176,7 @@ void Cloth::simulate(double frames_per_sec, double simulation_steps, ClothParame
             for (PointMass& pm : point_masses) {
                 if (pm.position.x == x && pm.position.z == y) {
                     pm.last_position.y = pm.position.y;
-                    pm.position.y = pos_array[coords];
+                    pm.position.y = pos_array[coords] + depth;
                     break;
                 }
             }

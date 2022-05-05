@@ -69,7 +69,7 @@ struct Cloth {
   double thickness;
   map<pair<double, double>, double> pos_array;
   map<pair<double, double>, double> vel_array;
-
+  double depth;
   e_orientation orientation;
 
   // Cloth components
