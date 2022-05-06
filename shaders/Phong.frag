@@ -34,6 +34,6 @@ void main() {
   vec3 L =  k_a * I_a + L_d + L_s;
 
   out_color = vec4(L, 1.0);
-  out_color.a = .5;
+  out_color.a = .1;
 }
 
